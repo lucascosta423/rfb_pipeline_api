@@ -1,0 +1,63 @@
+extends layout
+
+block content
+  main
+    form.form(action="/enviar" method="POST")
+      div.form-group
+        label(for="situacao") Situação Cadastral:
+        select#situacao(name="situacao" required)
+          option(value="02" selected) Ativo
+
+      div.form-group
+        label(for="estados") Estados:
+        select#estados(name="estados[]" multiple required onchange="carregarCidades()")
+          option(value="" disabled selected) Selecione um estado
+          each estado in estados
+            option(value=estado.uf)= estado.nome
+
+      div.form-group#cidades-container(style="display:none")
+        label(for="cidades") Cidades:
+        select#cidades(name="cidades[]" multiple required)
+          option(value="" disabled selected) Selecione uma cidade
+
+      div.form-group
+        label(for="quant") Quantidade:
+        input#quant(type="number" name="quant" required)
+
+      div.form-group
+        button(type="submit" name="Enviar") Entrar
+
+    script.
+
+
+
+      async function carregarCidades() {
+        const estadosSelect = document.getElementById('estados');
+        const cidadesContainer = document.getElementById('cidades-container');
+        const cidadesSelect = document.getElementById('cidades');
+        const selecionados = Array.from(estadosSelect.selectedOptions).map(opt => opt.value);
+
+        try {
+          const response = await fetch('/cidades-por-estados', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ estados: selecionados })
+          });
+
+          const cidades = await response.json();
+
+          cidadesSelect.innerHTML = '<option value="" disabled selected>Selecione uma cidade</option>';
+          cidades.forEach(cidade => {
+            const option = document.createElement('option');
+            option.value = cidade.siafi_id;
+            option.textContent = cidade.nome;
+            cidadesSelect.appendChild(option);
+          });
+
+          cidadesContainer.style.display = 'block';
+        } catch (err) {
+          console.error('Erro ao carregar cidades:', err);
+        }
+      }
